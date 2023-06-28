@@ -213,10 +213,9 @@ class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
 		}
 
 		if(
-			preg_match('/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/', $value, $matches) &&
+			preg_match('/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/', trim($value, '"'), $matches) &&
 			in_array($subfield, ['data', 'Point', 'LineString', 'Polygon'])
 		) {
-
 			// This is a lnglat query
 
 			$lng = round((float) $matches[1], 6);
@@ -254,7 +253,7 @@ class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
 						foreach($pages as $page) {
 							$item = $page->get($fieldName);
 							if($item) {
-								if(!count($item->getFeatures($subfield, [$lng, $lat]))) {
+								if(!count($item->getFeatures("{$subfield}|Multi{$subfield}", [$lng, $lat]))) {
 									$pages->remove($page);
 								}
 							}

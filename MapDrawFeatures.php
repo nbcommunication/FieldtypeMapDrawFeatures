@@ -210,19 +210,27 @@ class MapDrawFeatures extends WireData {
 							$coordinates = $geometry['coordinates'];
 							$matches = false;
 
-							switch($type) {
-								case 'Point':
-								case 'MultiPoint':
-									$matches = $this->isPoint($lnglat, $coordinates);
-									break;
-								case 'LineString':
-								case 'MultiLineString':
-									$matches = $this->onLineString($lnglat, $coordinates);
-									break;
-								case 'Polygon':
-								case 'MultiPolygon':
-									$matches = $this->inPolygon($lnglat, $coordinates);
-									break;
+							foreach($types as $t) {
+								switch($t) {
+									case 'point':
+									case 'multipoint':
+										if($this->isPoint($lnglat, $coordinates)) {
+											$matches = true;
+										}
+										break;
+									case 'linestring':
+									case 'multilinestring':
+										if($this->onLineString($lnglat, $coordinates)) {
+											$matches = true;
+										}
+										break;
+									case 'polygon':
+									case 'multipolygon':
+										if($this->inPolygon($lnglat, $coordinates)) {
+											$matches = true;
+										}
+										break;
+								}
 							}
 
 							if($matches) {
@@ -333,10 +341,29 @@ class MapDrawFeatures extends WireData {
 
 		$in = false;
 
-		$len = count($polygon);
-		if($len > 1) {
+		if(isset($polygon[0][0]) && is_float($polygon[0][0])) {
 
-			// MultiPolygon
+			$x = $lnglat[1];
+			$y = $lnglat[0];
+
+			$len = count($polygon);
+			for ($i = 0, $j = $len - 1; $i < $len; $j = $i++) {
+
+				$xi = $polygon[$i][1];
+				$yi = $polygon[$i][0];
+				$xj = $polygon[$j][1];
+				$yj = $polygon[$j][0];
+
+				if ((($yi > $y) !== ($yj > $y)) && ($x < ($xj - $xi) * ($y - $yi) / ($yj - $yi) + $xi)) {
+					$in = !$in;
+				}
+			}
+
+		} else if(
+			isset($polygon[0][0][0]) && is_float($polygon[0][0][0]) || // Polygon
+			isset($polygon[0][0][0][0]) && is_float($polygon[0][0][0][0]) // MultiPolygon
+		) {
+
 			foreach($polygon as $p) {
 				if($this->inPolygon($lnglat, $p)) {
 					$in = true;
@@ -345,23 +372,8 @@ class MapDrawFeatures extends WireData {
 
 		} else {
 
-			$p = $polygon[0];
-
-			$x = $lnglat[1];
-			$y = $lnglat[0];
-
-			$len = count($p);
-			for ($i = 0, $j = $len - 1; $i < $len; $j = $i++) {
-
-				$xi = $p[$i][1];
-				$yi = $p[$i][0];
-				$xj = $p[$j][1];
-				$yj = $p[$j][0];
-
-				if ((($yi > $y) !== ($yj > $y)) && ($x < ($xj - $xi) * ($y - $yi) / ($yj - $yi) + $xi)) {
-					$in = !$in;
-				}
-			}
+			// invalid?
+			$this->log(json_encode($polygon, 1));
 		}
 
 		return $in;
