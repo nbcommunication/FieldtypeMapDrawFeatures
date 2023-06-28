@@ -1,0 +1,305 @@
+<?php namespace ProcessWire;
+
+/**
+ * ProcessWire Draw Map Features Fieldtype
+ *
+ * #pw-summary Stores a GeoJSON FeatureCollection drawn on a MapLibre map.
+ * #pw-body Based on FieldtypeMapMarker by Ryan Cramer and FieldtypeLeafletMapMarker by Mats Neander.
+ *
+ * @copyright 2023 NB Communication Ltd
+ * @license Mozilla Public License v2.0 http://mozilla.org/MPL/2.0/
+ *
+ * @property string $style
+ *
+ */
+
+class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
+
+	/**
+	 * getModuleInfo is a module required by all modules to tell ProcessWire about them
+	 *
+	 * @return array
+	 *
+	 */
+	public static function getModuleInfo() {
+		return [
+			'title' => 'ProcessWire Draw Map Features Fieldtype',
+			'version' => 1,
+			'summary' => 'Stores a GeoJSON FeatureCollection drawn on a MapLibre map.',
+			'author' => 'nbcommunication',
+			'href' => 'https://github.com/nbcommunication/FieldtypeMapDrawFeatures',
+			'installs' => 'InputfieldMapDrawFeatures',
+			'icon' => 'object-group',
+			'requires' => 'ProcessWire>=3.0.210,PHP>=8.1.0',
+		];
+	}
+
+	/**
+	 * Include our MapDrawFeatures class, which serves as the value for fields of type FieldtypeMapDrawFeatures
+	 *
+	 */
+	public function __construct() {
+		require_once dirname(__FILE__) . '/MapDrawFeatures.php';
+	}
+
+	/**
+	 * Return the Inputfield required by this Fieldtype
+	 *
+	 * @param Page $page
+	 * @param Field $field
+	 * @return InputfieldMapMarker
+	 *
+	 */
+	public function getInputfield(Page $page, Field $field) {
+		$inputfield = $this->wire()->modules->get('InputfieldMapDrawFeatures');
+		$inputfield->set('style', $this->get('style'));
+		return $inputfield;
+	}
+
+	/**
+	 * Return all compatible Fieldtypes
+	 *
+	 * @param Field $field
+	 * @return null
+	 *
+	 */
+	public function ___getCompatibleFieldtypes(Field $field) {
+		// there are no other fieldtypes compatible with this one
+		return null;
+	}
+
+	/**
+	 * Sanitize value for runtime
+	 *
+	 * @param Page $page
+	 * @param Field $field
+	 * @param MapDrawFeatures $value
+	 * @return MapDrawFeatures
+	 *
+	 */
+	public function sanitizeValue(Page $page, Field $field, $value) {
+
+		// if it's not a MapDrawFeatures, then try to convert it
+		if(!$value instanceof MapDrawFeatures) {
+			$value = $this->getBlankValue($page, $field);
+		}
+
+		// If changed, tell the $page that this field changed
+		if(
+			$value->isChanged('south') ||
+			$value->isChanged('west') ||
+			$value->isChanged('north') ||
+			$value->isChanged('east') ||
+			$value->isChanged('features') ||
+			$value->isChanged('zoom')
+		) {
+			$page->trackChange($field->name);
+		}
+
+		return $value;
+	}
+
+	/**
+	 * Get a blank value used by this fieldtype
+	 *
+	 * @param Page $page
+	 * @param Field $field
+	 * @return MapDrawFeatures
+	 *
+	 */
+	public function getBlankValue(Page $page, Field $field) {
+		return new MapDrawFeatures();
+	}
+
+	/**
+	 * Given a raw value (value as stored in DB), return the value as it would appear in a Page object
+	 *
+	 * @param Page $page
+	 * @param Field $field
+	 * @param string|float|array $value
+	 * @return MapDrawFeatures
+	 *
+	 */
+	public function ___wakeupValue(Page $page, Field $field, $value) {
+
+		// Get a blank MapDraw Features instance
+		$item = $this->getBlankValue($page, $field);
+
+		// populate the marker
+		$item->features = $value['data'];
+		$item->south = (float) $value['south'];
+		$item->west = (float) $value['west'];
+		$item->north = (float) $value['north'];
+		$item->east = (float) $value['east'];
+		$item->zoom = (float) $value['zoom'];
+		$item->setTrackChanges(true);
+
+		return $item;
+	}
+
+	/**
+	 * Given an 'awake' value, as set by wakeupValue, convert the value back to a basic type for storage in DB.
+	 *
+	 * @param Page $page
+	 * @param Field $field
+	 * @param MapDrawFeatures $value
+	 * @return array
+	 * @throws WireException
+	 *
+	 */
+	public function ___sleepValue(Page $page, Field $field, $value) {
+
+		$item = $value;
+
+		if(!$item instanceof MapDrawFeatures) {
+			throw new WireException('Expecting an instance of MapDrawFeatures');
+		}
+
+		return [
+			'data' => $item->features,
+			'south' => $item->south,
+			'west' => $item->west,
+			'north' => $item->north,
+			'east' => $item->east,
+			'zoom' => $item->zoom,
+		];
+	}
+
+	/**
+	 * Return the database schema in specified format
+	 *
+	 * @param Field $field
+	 * @return array
+	 *
+	 */
+	public function getDatabaseSchema(Field $field) {
+
+		$schema = parent::getDatabaseSchema($field);
+
+		$schema['data'] = "MEDIUMTEXT NOT NULL DEFAULT ''"; // Features
+
+		$schema['south'] = "FLOAT(10,6) NOT NULL DEFAULT 0"; // south bounds (latitude)
+		$schema['west'] = "FLOAT(10,6) NOT NULL DEFAULT 0";	// west bounds (longitude)
+		$schema['north'] = "FLOAT(10,6) NOT NULL DEFAULT 0"; // north bounds (latitude)
+		$schema['east'] = "FLOAT(10,6) NOT NULL DEFAULT 0";	// east bounds (longitude)
+		$schema['zoom'] = "FLOAT(10,6) NOT NULL DEFAULT 0"; // zoom level
+
+		$schema['keys']['south'] = "KEY south (south)";
+		$schema['keys']['west'] = "KEY west (west)";
+		$schema['keys']['north'] = "KEY north (north)";
+		$schema['keys']['east'] = "KEY east (east)";
+		$schema['keys']['bounds'] = "KEY bounds (west, south, east, north)"; // keep an index of bounds
+		$schema['keys']['data'] = 'FULLTEXT KEY `data` (`data`)';
+		$schema['keys']['zoom'] = "KEY zoom (zoom)";
+
+		return $schema;
+	}
+
+	/**
+	 * Match values for PageFinder
+	 *
+	 * @param DatabaseQuerySelect $query
+	 * @param string $table
+	 * @param string $subfield
+	 * @param string $operator
+	 * @param string $value
+	 * @return DatabaseQuerySelect
+	 *
+	 */
+	public function getMatchQuery($query, $table, $subfield, $operator, $value) {
+
+		if(!$subfield || $subfield === 'features') {
+			$subfield = 'data';
+		}
+
+		if(
+			preg_match('/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/', $value, $matches) &&
+			in_array($subfield, ['data', 'Point', 'LineString', 'Polygon'])
+		) {
+
+			// This is a lnglat query
+
+			$lng = round((float) $matches[1], 6);
+			$lat = round((float) $matches[3], 6);
+
+			$table = $this->wire()->database->escapeTable($table);
+
+			$a = [];
+			foreach([
+				'west<:lng',
+				'south<:lat',
+				'east>:lng',
+				'north>:lat',
+			] as $q) {
+				$a[] = "{$table}.{$q}";
+			}
+
+			$query->where('(' . implode(' AND ', $a) . ')', [
+				':lng' => $lng,
+				':lat' => $lat,
+			]);
+
+			if($subfield !== 'data') {
+
+				$this->addHookAfter('Pages::found()', function(HookEvent $event) use ($table, $subfield, $lng, $lat) {
+
+					$pages = $event->arguments(0);
+					$details = $event->arguments(1);
+					$selectors = $pages->getSelectors();
+					$fieldName = str_replace('field_', '', $table);
+
+					if($selectors && strpos($selectors, "{$fieldName}.{$subfield}") !== false) {
+
+						// Filter features
+						foreach($pages as $page) {
+							$item = $page->get($fieldName);
+							if($item) {
+								if(!count($item->getFeatures($subfield, [$lng, $lat]))) {
+									$pages->remove($page);
+								}
+							}
+						}
+
+						$event->replace = true;
+						$event->return = $pages;
+					}
+				});
+			}
+
+			return $query;
+		}
+
+		if($subfield !== 'data' || $this->wire()->database->isOperator($operator)) {
+			// if dealing with something other than features, or operator is native to SQL,
+			// then let Fieldtype::getMatchQuery handle it instead
+			return parent::getMatchQuery($query, $table, $subfield, $operator, $value);
+		}
+
+		// If we get here, then we're performing either %= (LIKE and variations) or *= (FULLTEXT and variations)
+		$ft = new DatabaseQuerySelectFulltext($query);
+		$ft->match($table, $subfield, $operator, $value);
+
+		return $query;
+	}
+
+	/**
+	 * Module configuration
+	 *
+	 * @param array $data
+	 * @return InputfieldWrapper
+	 *
+	 */
+	public static function getModuleConfigInputfields(array $data) {
+		$inputfields = new InputfieldWrapper();
+		$inputfields->add([
+			'type' => 'text',
+			'name' => 'style',
+			'label' => __('Style URL'),
+			'description' => __('The MapLibre JSON style for the map.'),
+			'notes' => __('This can either be a full URL or relative to the site root.'),
+			'required' => true,
+			'value' => $data['style'] ?? '',
+		]);
+		return $inputfields;
+	}
+}
