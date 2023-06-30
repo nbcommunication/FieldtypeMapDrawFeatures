@@ -15,20 +15,13 @@
  *
  * @property string $featureCollection
  * @property array $points
- * @property array $point
  * @property array $lineStrings
- * @property array $lineString
  * @property array $polygons
- * @property array $polygon
  *
  * @method array getFeatures(string|array $type = '', array|string $lnglat = [])
- * @method array|null getFeature(string $type = '', int $index = 0)
- * @method array getPoints()
- * @method array|null getPoint(int $index = 0)
- * @method array getLineStrings()
- * @method array|null getLineString(int $index = 0)
- * @method array getPolygons()
- * @method array|null getPolygon(int $index = 0)
+ * @method array getPoints(array|string $lnglat = [])
+ * @method array getLineStrings(array|string $lnglat = [])
+ * @method array getPolygons(array|string $lnglat = [])
  * @method bool inPolygon(array $lnglat, array $polygon)
  * @method bool isPoint(array $lnglat, array $point)
  * @method bool onLineString(array $lnglat, array $lineString)
@@ -36,16 +29,13 @@
  */
 class MapDrawFeatures extends WireData {
 
-	const ZERO = 0.0;
-	const ZOOM = 12.0;
-
 	public function __construct() {
-		$this->set('south', self::ZERO);
-		$this->set('west', self::ZERO);
-		$this->set('north', self::ZERO);
-		$this->set('east', self::ZERO);
+		$this->set('south', 0.0);
+		$this->set('west', 0.0);
+		$this->set('north', 0.0);
+		$this->set('east', 0.0);
 		$this->set('features', '');
-		$this->set('zoom', self::ZOOM);
+		$this->set('zoom', 12.0);
 	}
 
 	/**
@@ -75,20 +65,11 @@ class MapDrawFeatures extends WireData {
 			case 'points':
 				$value = $this->getPoints();
 				break;
-			case 'point':
-				$value = $this->getPoint();
-				break;
 			case 'lineStrings':
 				$value = $this->getLineStrings();
 				break;
-			case 'lineString':
-				$value = $this->getLineString();
-				break;
 			case 'polygons':
 				$value = $this->getPolygons();
-				break;
-			case 'polygon':
-				$value = $this->getPolygon();
 				break;
 			default:
 				$value = parent::get($key);
@@ -150,7 +131,7 @@ class MapDrawFeatures extends WireData {
 	 * Get features, optionally by type
 	 *
 	 * @param string|array $type Point|LineString|Polygon|MultiPoint|MultiLineString|MultiPolygon
-	 * @param array|string $lnglat EXPERIMENTAL
+	 * @param array|string $lnglat
 	 * @return array
 	 *
 	 */
@@ -248,19 +229,6 @@ class MapDrawFeatures extends WireData {
 	}
 
 	/**
-	 * Get a feature by type and index
-	 *
-	 * @param string $type Point|LineString|Polygon|MultiPoint|MultiLineString|MultiPolygon
-	 * @param int $index
-	 * @param string|array $lnglat
-	 * @return array
-	 *
-	 */
-	public function getFeature($type = '', int $index = 0, $lnglat = []) {
-		return $this->getFeatures($type, $lnglat)[$index] ?? [];
-	}
-
-	/**
 	 * Get Points
 	 *
 	 * @param string|array $lnglat
@@ -268,19 +236,7 @@ class MapDrawFeatures extends WireData {
 	 *
 	 */
 	public function getPoints($lnglat = []) {
-		return $this->getFeatures('Point', $lnglat);
-	}
-
-	/**
-	 * Get a Point by index
-	 *
-	 * @param int $index
-	 * @param string|array $lnglat
-	 * @return array
-	 *
-	 */
-	public function getPoint(int $index = 0, $lnglat = []) {
-		return $this->getFeature('Point', $index, $lnglat);
+		return $this->getFeatures('Point|MultiPoint', $lnglat);
 	}
 
 	/**
@@ -291,19 +247,7 @@ class MapDrawFeatures extends WireData {
 	 *
 	 */
 	public function getLineStrings($lnglat = []) {
-		return $this->getFeatures('LineString', $lnglat);
-	}
-
-	/**
-	 * Get a LineString by index
-	 *
-	 * @param int $index
-	 * @param string|array $lnglat
-	 * @return array
-	 *
-	 */
-	public function getLineString(int $index = 0, $lnglat = []) {
-		return $this->getFeature('LineString', $index, $lnglat);
+		return $this->getFeatures('LineString|MultiLineString', $lnglat);
 	}
 
 	/**
@@ -314,23 +258,13 @@ class MapDrawFeatures extends WireData {
 	 *
 	 */
 	public function getPolygons($lnglat = []) {
-		return $this->getFeatures('Polygon', $lnglat);
-	}
-
-	/**
-	 * Get a Polygon by index
-	 *
-	 * @param int $index
-	 * @param string|array $lnglat
-	 * @return array
-	 *
-	 */
-	public function getPolygon(int $index = 0, $lnglat = []) {
-		return $this->getFeature('Polygon', $index, $lnglat);
+		return $this->getFeatures('Polygon|MultiPolygon', $lnglat);
 	}
 
 	/**
 	 * Is the LngLat in the Polygon?
+	 *
+	 * #pw-advanced
 	 *
 	 * @param array $lnglat
 	 * @param array $polygon
@@ -372,8 +306,7 @@ class MapDrawFeatures extends WireData {
 
 		} else {
 
-			// invalid?
-			$this->log(json_encode($polygon, 1));
+			$this->log($this->_('Invalid polygon') . ': ' . json_encode($polygon, 1));
 		}
 
 		return $in;
@@ -381,6 +314,8 @@ class MapDrawFeatures extends WireData {
 
 	/**
 	 * Is the LngLat the Point?
+	 *
+	 * #pw-advanced
 	 *
 	 * @param array $lnglat
 	 * @param array $point
@@ -417,6 +352,8 @@ class MapDrawFeatures extends WireData {
 
 	/**
 	 * Is the LngLat on the LineString?
+	 *
+	 * #pw-advanced
 	 *
 	 * @param array $lnglat
 	 * @param array $lineString

@@ -23,7 +23,7 @@ class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
 	 */
 	public static function getModuleInfo() {
 		return [
-			'title' => 'ProcessWire Draw Map Features Fieldtype',
+			'title' => 'Draw Map Features',
 			'version' => 1,
 			'summary' => 'Stores a GeoJSON FeatureCollection drawn on a MapLibre map.',
 			'author' => 'nbcommunication',

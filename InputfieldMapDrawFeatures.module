@@ -29,7 +29,7 @@ class InputfieldMapDrawFeatures extends Inputfield {
 	 */
 	public static function getModuleInfo() {
 		return [
-			'title' => 'ProcessWire Draw Map Features Inputfield',
+			'title' => 'Draw Map Features Inputfield',
 			'version' => 1,
 			'summary' => 'Provides the Inputfield for FieldtypeMapDrawFeatures',
 			'author' => 'nbcommunication',
@@ -91,7 +91,7 @@ class InputfieldMapDrawFeatures extends Inputfield {
 
 		$center = $value->center;
 		if(count($center) < 2 || (float) $center[0] === self::LNGLAT && (float) $center[1] === self::LNGLAT) {
-			$center = [$this->defaultLng, $this->defaultLat];
+			$center = [(float) $this->defaultLng, (float) $this->defaultLat];
 			$value->set('zoom', $this->defaultZoom);
 		}
 
