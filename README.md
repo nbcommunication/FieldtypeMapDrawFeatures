@@ -13,7 +13,7 @@ It does this using the [MapLibre GL JS](https://maplibre.org/maplibre-gl-js-docs
 2. If you downloaded the zip file, extract it in your `sites/modules` directory.
 3. In your admin, go to Modules > Refresh, then Modules > New, then click on the Install button for this module.
 
-**ProcessWire >= 3.0.210 and PHP >= 8,1 are required to use this module.**
+**ProcessWire >= 3.0.210 and PHP >= 8.1 are required to use this module.**
 
 ## Configuration
 To configure this module, go to Modules > Configure > FieldtypeMapDrawFeatures.
