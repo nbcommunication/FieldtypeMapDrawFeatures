@@ -98,7 +98,10 @@ const InputfieldMapDrawFeatures = {
 				$inputWest.val(bounds.getWest());
 				$inputNorth.val(bounds.getNorth());
 				$inputEast.val(bounds.getEast());
-				$inputZoom.val(map.getZoom());
+				const zoom = map.getZoom();
+				if (mapOptions.zoom !== zoom) {
+					$inputZoom.val(zoom);
+				}
 			};
 
 			map.on('draw.create', updateArea);

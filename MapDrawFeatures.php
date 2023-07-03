@@ -262,6 +262,16 @@ class MapDrawFeatures extends WireData {
 	}
 
 	/**
+	 * Does the item has bounds set?
+	 *
+	 * @return bool
+	 *
+	 */
+	public function hasBounds() {
+		return $this->south && $this->west && $this->north && $this->east;
+	}
+
+	/**
 	 * Is the LngLat in the Polygon?
 	 *
 	 * #pw-advanced

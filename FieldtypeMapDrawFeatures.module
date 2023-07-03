@@ -24,7 +24,7 @@ class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
 	public static function getModuleInfo() {
 		return [
 			'title' => 'Draw Map Features',
-			'version' => 1,
+			'version' => 2,
 			'summary' => 'Stores a GeoJSON FeatureCollection drawn on a MapLibre map.',
 			'author' => 'nbcommunication',
 			'href' => 'https://github.com/nbcommunication/FieldtypeMapDrawFeatures',

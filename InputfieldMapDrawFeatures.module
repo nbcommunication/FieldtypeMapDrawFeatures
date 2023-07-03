@@ -30,7 +30,7 @@ class InputfieldMapDrawFeatures extends Inputfield {
 	public static function getModuleInfo() {
 		return [
 			'title' => 'Draw Map Features Inputfield',
-			'version' => 1,
+			'version' => 2,
 			'summary' => 'Provides the Inputfield for FieldtypeMapDrawFeatures',
 			'author' => 'nbcommunication',
 			'requires' => 'FieldtypeMapDrawFeatures',
@@ -92,7 +92,9 @@ class InputfieldMapDrawFeatures extends Inputfield {
 		$center = $value->center;
 		if(count($center) < 2 || (float) $center[0] === self::LNGLAT && (float) $center[1] === self::LNGLAT) {
 			$center = [(float) $this->defaultLng, (float) $this->defaultLat];
-			$value->set('zoom', $this->defaultZoom);
+			if(!$value->zoom) {
+				$value->set('zoom', $this->defaultZoom);
+			}
 		}
 
 		$controls = [];

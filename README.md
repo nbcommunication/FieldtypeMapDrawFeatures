@@ -128,6 +128,12 @@ A shortcut for `getFeatures('Polygon|Polygon')`
 $polygons = $page->mapDrawFeatures->getPolygons();
 ```
 
+#### **hasBounds()**
+Does the MapDrawFeatures item have bounds? A quick way of checking whether features have been added.
+```php
+$hasBounds = $page->mapDrawFeatures->hasBounds();
+```
+
 ### API Properties
 ```php
 // Returns float values
