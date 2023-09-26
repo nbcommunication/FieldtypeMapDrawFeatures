@@ -68,6 +68,9 @@ class MapDrawFeatures extends WireData {
 			case 'lineStrings':
 				$value = $this->getLineStrings();
 				break;
+			case 'lnglat':
+				$value = implode(',', $this->center);
+				break;
 			case 'polygons':
 				$value = $this->getPolygons();
 				break;
