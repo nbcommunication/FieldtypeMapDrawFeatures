@@ -123,7 +123,7 @@ $lineStrings = $page->mapDrawFeatures->getLineStrings();
 ```
 
 #### **getPolygons(_string|array_ **$lnglat)**
-A shortcut for `getFeatures('Polygon|Polygon')`
+A shortcut for `getFeatures('Polygon|MultiPolygon')`
 ```php
 $polygons = $page->mapDrawFeatures->getPolygons();
 ```

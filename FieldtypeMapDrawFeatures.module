@@ -24,7 +24,7 @@ class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
 	public static function getModuleInfo() {
 		return [
 			'title' => 'Draw Map Features',
-			'version' => 2,
+			'version' => 3,
 			'summary' => 'Stores a GeoJSON FeatureCollection drawn on a MapLibre map.',
 			'author' => 'nbcommunication',
 			'href' => 'https://github.com/nbcommunication/FieldtypeMapDrawFeatures',
@@ -212,57 +212,59 @@ class FieldtypeMapDrawFeatures extends Fieldtype implements ConfigurableModule {
 			$subfield = 'data';
 		}
 
-		if(
-			preg_match('/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/', trim($value, '"'), $matches) &&
-			in_array($subfield, ['data', 'Point', 'LineString', 'Polygon'])
-		) {
-			// This is a lnglat query
+		if(in_array($subfield, ['data', 'Point', 'LineString', 'Polygon'])) {
 
-			$lng = round((float) $matches[1], 6);
-			$lat = round((float) $matches[3], 6);
+			if(preg_match('/^(-?\d+(\.\d+)?),\s*(-?\d+(\.\d+)?)$/', trim($value, '"'), $matches)) {
+				// todo regex to handle e-notation
 
-			$table = $this->wire()->database->escapeTable($table);
+				// This is a lnglat query
+				$lng = round((float) $matches[1], 6);
+				$lat = round((float) $matches[3], 6);
 
-			$a = [];
-			foreach([
-				'west<:lng',
-				'south<:lat',
-				'east>:lng',
-				'north>:lat',
-			] as $q) {
-				$a[] = "{$table}.{$q}";
-			}
+				$table = $this->wire()->database->escapeTable($table);
 
-			$query->where('(' . implode(' AND ', $a) . ')', [
-				':lng' => $lng,
-				':lat' => $lat,
-			]);
+				$a = [];
+				foreach([
+					'west<:lng',
+					'south<:lat',
+					'east>:lng',
+					'north>:lat',
+				] as $q) {
+					$a[] = "{$table}.{$q}";
+				}
 
-			if($subfield !== 'data') {
+				$query->where('(' . implode(' AND ', $a) . ')', [
+					':lng' => $lng,
+					':lat' => $lat,
+				]);
 
-				$this->addHookAfter('Pages::found()', function(HookEvent $event) use ($table, $subfield, $lng, $lat) {
+				if($subfield !== 'data') {
 
-					$pages = $event->arguments(0);
-					$details = $event->arguments(1);
-					$selectors = $pages->getSelectors();
-					$fieldName = str_replace('field_', '', $table);
+					$this->addHookAfter('Pages::found()', function(HookEvent $event) use ($table, $subfield, $lng, $lat) {
 
-					if($selectors && strpos($selectors, "{$fieldName}.{$subfield}") !== false) {
+						$pages = $event->arguments(0);
+						$details = $event->arguments(1);
+						$selectors = $pages->getSelectors();
+						$fieldName = str_replace('field_', '', $table);
 
-						// Filter features
-						foreach($pages as $page) {
-							$item = $page->get($fieldName);
-							if($item) {
-								if(!count($item->getFeatures("{$subfield}|Multi{$subfield}", [$lng, $lat]))) {
-									$pages->remove($page);
+						if($selectors && strpos($selectors, "{$fieldName}.{$subfield}") !== false) {
+
+							// Filter features
+							foreach($pages as $page) {
+								$item = $page->get($fieldName);
+								if($item) {
+									if(!count($item->getFeatures("{$subfield}|Multi{$subfield}", [$lng, $lat]))) {
+										$pages->remove($page);
+									}
 								}
 							}
-						}
 
-						$event->replace = true;
-						$event->return = $pages;
-					}
-				});
+							$event->replace = true;
+							$event->return = $pages;
+							$event->removeHook(null);
+						}
+					});
+				}
 			}
 
 			return $query;
